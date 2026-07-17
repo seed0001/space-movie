@@ -46,7 +46,7 @@ export function initDevPanel(hooks = {}) {
 
   const info = root.querySelector('.dev-info');
   const tick = () => {
-    info.textContent = hooks.getStatus?.() ?? location.search || 'dev mode';
+    info.textContent = (hooks.getStatus?.() ?? location.search) || 'dev mode';
     requestAnimationFrame(tick);
   };
   tick();

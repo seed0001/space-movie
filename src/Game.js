@@ -677,9 +677,7 @@ export class Game {
         if (document.pointerLockElement === document.body) {
             const sensitivity = 0.002;
             const yawInput = -this.mouseDelta.x * sensitivity;
-            const pitchInput = -this.mouseDelta.y * sensitivity; // Mouse UP (negative Y) should Pitch UP (positive rot X)??
-            // Usually Pitch Up is rotating X positively (nose up), but mouse delta Y- is up.
-            // So -Y * sens = +X rot. Correct. Or depends on THREE orientation.
+            const pitchInput = this.mouseDelta.y * sensitivity; // Inverted: mouse up pitches nose down
 
             // Apply rotation directly
             // Note: delta is already time-independent effectively since it's per-frame movement distance? 

@@ -2,34 +2,10 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
-import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Game } from './Game.js';
 import { initDevPanel } from './dev/DevPanel.js';
-
-// Pixelation shader
-const PixelShader = {
-    uniforms: {
-        'tDiffuse': { value: null },
-        'resolution': { value: new THREE.Vector2(256, 144) }
-    },
-    vertexShader: `
-        varying vec2 vUv;
-        void main() {
-            vUv = uv;
-            gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-        }
-    `,
-    fragmentShader: `
-        uniform sampler2D tDiffuse;
-        uniform vec2 resolution;
-        varying vec2 vUv;
-        void main() {
-            vec2 dxy = 1.0 / resolution;
-            vec2 coord = dxy * floor(vUv / dxy);
-            gl_FragColor = texture2D(tDiffuse, coord);
-        }
-    `
-};
 
 // Star Trail Shader
 const StarTrailShader = {
@@ -79,11 +55,13 @@ class Main {
         // Setup renderer
         this.renderer = new THREE.WebGLRenderer({
             canvas: this.canvas,
-            antialias: false
+            antialias: true
         });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(1); // Force low resolution for pixel effect
+        this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
         this.renderer.setClearColor(0x000000);
+        this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+        this.renderer.toneMappingExposure = 1.15;
 
         // Setup scene
         this.scene = new THREE.Scene();
@@ -138,13 +116,17 @@ class Main {
         const renderPass = new RenderPass(this.scene, this.camera);
         this.composer.addPass(renderPass);
 
-        // Pixelation pass
-        this.pixelPass = new ShaderPass(PixelShader);
-        this.pixelPass.uniforms.resolution.value.set(
-            Math.floor(window.innerWidth / 4),
-            Math.floor(window.innerHeight / 4)
+        // Bloom: makes the sun, engine glows, lasers and station lights radiate
+        this.bloomPass = new UnrealBloomPass(
+            new THREE.Vector2(window.innerWidth, window.innerHeight),
+            0.65,  // strength
+            0.4,   // radius
+            0.85   // threshold — only bright emissives bloom
         );
-        this.composer.addPass(this.pixelPass);
+        this.composer.addPass(this.bloomPass);
+
+        // Applies tone mapping + sRGB conversion as the final step
+        this.composer.addPass(new OutputPass());
     }
 
     createStarfield() {
@@ -310,26 +292,40 @@ class Main {
     }
 
     setupLights() {
-        // Ambient light (increased intensity)
-        const ambient = new THREE.AmbientLight(0x404040, 1.5); // Soft white light
+        // Low ambient fill — space should be dark so the sun creates contrast
+        const ambient = new THREE.AmbientLight(0x404060, 0.5);
         this.scene.add(ambient);
 
-        // Hemisphere light (Sky color, Ground color, Intensity)
-        // Adds a nice gradient fill
-        const hemiLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 1);
+        // Faint hemisphere gradient so shadowed sides aren't pure black
+        const hemiLight = new THREE.HemisphereLight(0xffffbb, 0x080820, 0.3);
         this.scene.add(hemiLight);
 
         // Sun (PointLight radiating from the center)
         // High intensity and distance for solar system scale
-        const sun = new THREE.PointLight(0xffffcc, 2.5, 500000, 0.5); // 500k range
+        const sun = new THREE.PointLight(0xffffcc, 3.5, 500000, 0.5); // 500k range
         sun.position.set(0, 0, 0);
         this.scene.add(sun);
 
-        // Sun glow (Visual only)
-        const sunGeo = new THREE.SphereGeometry(2000, 32, 32); // Larger sun visual
-        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffaa });
+        // Sun core — bright enough to trip the bloom threshold
+        const sunGeo = new THREE.SphereGeometry(2000, 32, 32);
+        const sunMat = new THREE.MeshBasicMaterial({ color: 0xffffee });
+        sunMat.color.multiplyScalar(2.0);
         const sunMesh = new THREE.Mesh(sunGeo, sunMat);
         this.scene.add(sunMesh);
+
+        // Corona sprite for a soft halo beyond the bloom
+        const coronaTex = this.createCloudTexture();
+        const coronaMat = new THREE.SpriteMaterial({
+            map: coronaTex,
+            color: 0xffddaa,
+            transparent: true,
+            opacity: 0.8,
+            blending: THREE.AdditiveBlending,
+            depthWrite: false
+        });
+        const corona = new THREE.Sprite(coronaMat);
+        corona.scale.set(14000, 14000, 1);
+        this.scene.add(corona);
     }
 
     updateLoading(percent, text) {
@@ -346,12 +342,6 @@ class Main {
 
         this.renderer.setSize(width, height);
         this.composer.setSize(width, height);
-
-        // Update pixel shader resolution
-        this.pixelPass.uniforms.resolution.value.set(
-            Math.floor(width / 4),
-            Math.floor(height / 4)
-        );
     }
 
     animate() {

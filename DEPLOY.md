@@ -11,8 +11,9 @@ cloud-save API backed by a volume.
    default branch out of the box. Either merge to `main`, or in
    *Service → Settings → Source* set the branch to the one carrying the
    cinema system. (`railway.json` in the repo handles build & start commands
-   automatically: build `npm ci && BASE_PATH=/ npm run build`, start
-   `node server.mjs`, healthcheck `/api/health`.)
+   automatically: build `BASE_PATH=/ npm run build` — Nixpacks runs `npm ci`
+   in its own install phase — start `node server.mjs`, healthcheck
+   `/api/health`.)
 
 2. **Add a volume** for cloud saves: *Service → right-click / Command palette →
    Add volume*, mount path **`/data`**.

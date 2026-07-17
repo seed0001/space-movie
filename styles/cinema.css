@@ -1,0 +1,494 @@
+/* ===== CINEMA SYSTEM ===== */
+/* Mode select, letterbox, subtitles, title cards, fades */
+
+/* ---------- Mode Select ---------- */
+#mode-select {
+    position: fixed;
+    inset: 0;
+    z-index: 3000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(ellipse at 50% 120%, #101830 0%, #05070d 60%, #000 100%);
+    font-family: 'Courier New', monospace;
+    transition: opacity 0.8s ease;
+}
+
+#mode-select.hidden {
+    display: none;
+}
+
+#mode-select.fading {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#mode-select h1 {
+    color: #fff;
+    letter-spacing: 12px;
+    font-size: 42px;
+    margin-bottom: 4px;
+    text-shadow: 0 0 30px rgba(100, 160, 255, 0.6);
+}
+
+#mode-select .tagline {
+    color: #6a7a9a;
+    letter-spacing: 4px;
+    font-size: 13px;
+    margin-bottom: 60px;
+    text-transform: uppercase;
+}
+
+.mode-cards {
+    display: flex;
+    gap: 30px;
+}
+
+.mode-card {
+    width: 240px;
+    padding: 30px 24px;
+    border: 1px solid #2a3a5a;
+    background: rgba(10, 16, 30, 0.8);
+    color: #cdd6ea;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.25s ease;
+}
+
+.mode-card:hover {
+    border-color: #7ab0ff;
+    background: rgba(20, 34, 64, 0.9);
+    transform: translateY(-6px);
+    box-shadow: 0 12px 40px rgba(60, 120, 255, 0.25);
+}
+
+.mode-card .mode-numeral {
+    font-size: 30px;
+    color: #7ab0ff;
+    margin-bottom: 10px;
+    letter-spacing: 4px;
+}
+
+.mode-card .mode-title {
+    font-size: 17px;
+    letter-spacing: 3px;
+    color: #fff;
+    margin-bottom: 14px;
+}
+
+.mode-card .mode-desc {
+    font-size: 12px;
+    line-height: 1.6;
+    color: #8a97b5;
+}
+
+/* ---------- Seed Panel ---------- */
+#seed-panel {
+    width: min(980px, 92vw);
+    max-height: 78vh;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+#seed-panel.hidden {
+    display: none;
+}
+
+.seed-columns {
+    display: flex;
+    gap: 40px;
+    align-items: flex-start;
+}
+
+.seed-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.seed-col h2 {
+    color: #fff;
+    letter-spacing: 6px;
+    font-size: 18px;
+    margin-bottom: 12px;
+}
+
+.seed-help {
+    color: #8a97b5;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-bottom: 18px;
+}
+
+.seed-col label {
+    color: #7ab0ff;
+    font-size: 11px;
+    letter-spacing: 2px;
+    margin: 12px 0 5px;
+}
+
+.seed-col label .req {
+    color: #ffd479;
+}
+
+.seed-col label .opt {
+    color: #45526e;
+}
+
+.seed-col input,
+.seed-col textarea,
+.seed-col select {
+    background: rgba(8, 14, 28, 0.9);
+    border: 1px solid #2a3a5a;
+    color: #cdd6ea;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    padding: 9px 12px;
+    outline: none;
+    resize: vertical;
+}
+
+.seed-col input:focus,
+.seed-col textarea:focus,
+.seed-col select:focus {
+    border-color: #7ab0ff;
+}
+
+.ai-status {
+    margin-top: 18px;
+    font-size: 11px;
+    line-height: 1.6;
+    padding: 10px 12px;
+    border: 1px dashed #2a3a5a;
+}
+
+.ai-status.live { color: #8affc1; border-color: #2a5a3a; }
+.ai-status.offline { color: #8a97b5; }
+
+.seed-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 22px;
+}
+
+.seed-btn {
+    padding: 12px;
+    font-size: 14px;
+    letter-spacing: 3px;
+    background: rgba(10, 16, 30, 0.8);
+    border: 1px solid #2a3a5a;
+    color: #cdd6ea;
+    cursor: pointer;
+    font-family: 'Courier New', monospace;
+    transition: all 0.2s ease;
+}
+
+.seed-btn:hover {
+    border-color: #7ab0ff;
+    background: rgba(20, 34, 64, 0.9);
+}
+
+.seed-btn.primary {
+    border-color: #ffd479;
+    color: #ffd479;
+}
+
+.seed-btn.primary:hover {
+    background: rgba(64, 52, 20, 0.9);
+    box-shadow: 0 0 30px rgba(255, 212, 121, 0.2);
+}
+
+.seed-error {
+    margin-top: 12px;
+    color: #ff8a8a;
+    font-size: 12px;
+    min-height: 16px;
+}
+
+#mode-select .mode-footnote {
+    margin-top: 50px;
+    color: #45526e;
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+
+/* ---------- Cinema Overlay ---------- */
+#cinema-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    pointer-events: none;
+    font-family: 'Courier New', monospace;
+}
+
+/* Letterbox bars */
+.letterbox-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 0;
+    background: #000;
+    transition: height 1.2s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2001;
+}
+
+#letterbox-top { top: 0; }
+#letterbox-bottom { bottom: 0; }
+
+#cinema-overlay.letterboxed #letterbox-top,
+#cinema-overlay.letterboxed #letterbox-bottom {
+    height: 11vh;
+}
+
+/* Fade to black layer */
+#cinema-fade {
+    position: absolute;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    transition: opacity 1s ease;
+    z-index: 2010;
+}
+
+#cinema-fade.opaque {
+    opacity: 1;
+}
+
+#cinema-fade.slow {
+    transition: opacity 2.5s ease;
+}
+
+/* Subtitles / dialogue */
+#cinema-subtitles {
+    position: absolute;
+    bottom: 13vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(760px, 80vw);
+    text-align: center;
+    z-index: 2005;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+#cinema-subtitles.visible {
+    opacity: 1;
+}
+
+#subtitle-speaker {
+    font-size: 14px;
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    text-shadow: 0 1px 4px #000;
+}
+
+#subtitle-text {
+    font-size: 19px;
+    line-height: 1.5;
+    color: #fff;
+    text-shadow: 0 2px 6px #000, 0 0 20px rgba(0, 0, 0, 0.8);
+}
+
+#subtitle-text.narrator {
+    font-style: italic;
+    color: #d8e2f8;
+    font-size: 18px;
+}
+
+/* Title cards */
+#cinema-titlecard {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 2015;
+    opacity: 0;
+    transition: opacity 1.4s ease;
+    pointer-events: none;
+    background: rgba(0, 0, 0, 0.35);
+}
+
+#cinema-titlecard.visible {
+    opacity: 1;
+}
+
+#titlecard-super {
+    color: #7ab0ff;
+    font-size: 14px;
+    letter-spacing: 8px;
+    margin-bottom: 18px;
+    text-transform: uppercase;
+}
+
+#titlecard-main {
+    color: #fff;
+    font-size: 44px;
+    letter-spacing: 10px;
+    text-align: center;
+    text-transform: uppercase;
+    text-shadow: 0 0 40px rgba(120, 170, 255, 0.5);
+    max-width: 80vw;
+}
+
+#titlecard-sub {
+    color: #97a5c5;
+    font-size: 15px;
+    letter-spacing: 3px;
+    margin-top: 20px;
+    font-style: italic;
+}
+
+/* Lower-third location card */
+#cinema-lowerthird {
+    position: absolute;
+    left: 40px;
+    bottom: 16vh;
+    z-index: 2005;
+    opacity: 0;
+    transform: translateX(-20px);
+    transition: opacity 0.8s ease, transform 0.8s ease;
+    border-left: 3px solid #7ab0ff;
+    padding-left: 14px;
+}
+
+#cinema-lowerthird.visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+#lowerthird-title {
+    color: #fff;
+    font-size: 22px;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 8px #000;
+}
+
+#lowerthird-sub {
+    color: #9ab;
+    font-size: 12px;
+    letter-spacing: 2px;
+    margin-top: 4px;
+    text-shadow: 0 2px 8px #000;
+}
+
+/* Story mode objective banner */
+#story-objective {
+    position: absolute;
+    top: 76px; /* below the solar map strip */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2004;
+    background: rgba(6, 12, 26, 0.85);
+    border: 1px solid #2a3a5a;
+    border-left: 3px solid #ffd479;
+    padding: 10px 22px;
+    color: #ffd479;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+    max-width: 70vw;
+    text-align: center;
+}
+
+#story-objective.visible {
+    opacity: 1;
+}
+
+#story-objective .objective-label {
+    color: #6a7a9a;
+    font-size: 10px;
+    display: block;
+    margin-bottom: 3px;
+}
+
+/* Skip / menu hints */
+#cinema-hint {
+    position: absolute;
+    right: 30px;
+    bottom: 3.5vh;
+    z-index: 2006;
+    color: rgba(255, 255, 255, 0.35);
+    font-size: 11px;
+    letter-spacing: 2px;
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
+#cinema-hint.visible {
+    opacity: 1;
+}
+
+/* Film grain vignette for movie mode */
+#cinema-vignette {
+    position: absolute;
+    inset: 0;
+    z-index: 2002;
+    opacity: 0;
+    transition: opacity 2s ease;
+    background: radial-gradient(ellipse at center, transparent 55%, rgba(0, 0, 0, 0.45) 100%);
+}
+
+#cinema-vignette.visible {
+    opacity: 1;
+}
+
+/* Hide gameplay HUD when the film is running */
+body.cinema-hide-hud #hud,
+body.cinema-hide-hud #radar,
+body.cinema-hide-hud #speed-indicator,
+body.cinema-hide-hud #target-info,
+body.cinema-hide-hud #solar-map,
+body.cinema-hide-hud #controls-hint,
+body.cinema-hide-hud #crosshair,
+body.cinema-hide-hud #waypoints,
+body.cinema-hide-hud #mining-hud,
+body.cinema-hide-hud #dock-prompt,
+body.cinema-hide-hud #notification-area {
+    display: none !important;
+}
+
+/* Story mode: keep HUD but hide dev-ish hints during cutaways */
+body.cinema-cutaway #crosshair,
+body.cinema-cutaway #waypoints,
+body.cinema-cutaway #controls-hint {
+    display: none !important;
+}
+
+/* End credits */
+#cinema-credits {
+    position: absolute;
+    inset: 0;
+    z-index: 2020;
+    display: none;
+    background: #000;
+    overflow: hidden;
+}
+
+#cinema-credits.rolling {
+    display: block;
+}
+
+#credits-scroll {
+    position: absolute;
+    left: 0;
+    right: 0;
+    text-align: center;
+    color: #cdd6ea;
+    font-size: 16px;
+    letter-spacing: 3px;
+    line-height: 2.6;
+    animation: credits-roll 30s linear forwards;
+}
+
+@keyframes credits-roll {
+    from { top: 100vh; }
+    to { top: -160vh; }
+}

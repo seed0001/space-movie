@@ -5,6 +5,7 @@ import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Game } from './Game.js';
+import { CinemaManager } from './cinema/CinemaManager.js';
 import { initDevPanel } from './dev/DevPanel.js';
 
 // Star Trail Shader
@@ -90,10 +91,14 @@ class Main {
         this.game = new Game(this.scene, this.camera, this.renderer);
         await this.game.init();
 
-        // Hide loading screen
+        // Cinema system: mode select (Game / Story / Movie)
+        this.cinema = new CinemaManager(this.game, this.camera);
+
+        // Hide loading screen, then offer the three doors
         this.updateLoading(100, 'Ready!');
         setTimeout(() => {
             this.loadingScreen.classList.add('hidden');
+            this.cinema.showModeSelect();
         }, 500);
 
         // Setup controls (temporary for testing)
@@ -357,6 +362,11 @@ class Main {
             if (this.game.playerShip) {
                 shipVelocity.copy(this.game.playerShip.velocity);
             }
+        }
+
+        // Cinema system (camera direction, scene pacing)
+        if (this.cinema) {
+            this.cinema.update(delta);
         }
 
         // Update Star Trails

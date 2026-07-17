@@ -27,6 +27,16 @@ export class Game {
         this.selectedTargetId = null;
         this.autopilotEnabled = false;
 
+        // Cinema hooks (Story/Movie modes). When externalController is set,
+        // it flies the ship instead of player input. cameraLocked hands the
+        // camera to the CameraDirector. inputLocked suppresses pointer lock,
+        // docking and targeting keys (menus, movie mode, cutaways).
+        // onGameEvent, when set, receives ('dock'|'undock'|'enemyKilled'|'playerHit', data).
+        this.externalController = null;
+        this.cameraLocked = false;
+        this.inputLocked = false;
+        this.onGameEvent = null;
+
         // Data
         this.shipsData = null;
         this.locationsData = null;
@@ -251,14 +261,14 @@ export class Game {
             this.keys[e.code] = false;
 
             // Toggle docking
-            if (e.code === 'KeyF') {
+            if (e.code === 'KeyF' && !this.inputLocked) {
                 this.tryDocking();
             }
         });
 
         // Pointer Lock Request on click
         document.body.addEventListener('click', () => {
-            if (!this.dockedAt) {
+            if (!this.dockedAt && !this.inputLocked) {
                 document.body.requestPointerLock();
             }
         });
@@ -282,6 +292,7 @@ export class Game {
 
         // Target Selection & Autopilot Keys
         window.addEventListener('keydown', (e) => {
+            if (this.inputLocked) return;
             if (e.code === 'Comma') this.cycleTarget(-1);
             if (e.code === 'Period') this.cycleTarget(1);
             if (e.code === 'KeyP') this.toggleAutopilot();
@@ -508,7 +519,10 @@ export class Game {
         }
 
         // Handle input
-        if (this.autopilotEnabled) {
+        if (this.externalController) {
+            // Cinema system (AI pilot / cutaway freeze) flies the ship
+            this.externalController(delta);
+        } else if (this.autopilotEnabled) {
             this.updateAutopilot(delta);
             // Disable manual mouse/key inputs for flight, but maybe keep camera?
             // For now, let autopilot helper override ship physics directly
@@ -538,8 +552,8 @@ export class Game {
         // Update Combat
         this.combatManager.update(delta);
 
-        // Update camera to follow ship
-        this.updateCamera();
+        // Update camera to follow ship (unless the CameraDirector owns it)
+        if (!this.cameraLocked) this.updateCamera();
 
         // Check proximity to stations
         this.checkStationProximity();
@@ -877,11 +891,14 @@ export class Game {
             this.playerShip.velocity.set(0, 0, 0);
             this.playerShip.angularVelocity.set(0, 0, 0);
         }
+
+        this.onGameEvent?.('dock', { id: station.data.id });
     }
 
     undock() {
         this.dockedAt = null;
         document.getElementById('station-ui').classList.add('hidden');
+        this.onGameEvent?.('undock', {});
     }
 
     updateStationUI() {

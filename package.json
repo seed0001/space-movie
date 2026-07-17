@@ -25,5 +25,8 @@
     "url": "https://github.com/pfaustino/solar-system-trader/issues"
   },
   "homepage": "https://github.com/pfaustino/solar-system-trader#readme",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "three": "^0.160.0"
+  }
 }

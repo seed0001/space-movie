@@ -40,6 +40,7 @@ export class CombatManager {
                 this.game.credits += 100 * (enemy.stats.scale);
                 this.game.updateHUD();
                 this.game.audioManager.playExplosion(); // Explosion Sound
+                this.game.onGameEvent?.('enemyKilled', { type: enemy.type });
             }
         });
 
@@ -65,6 +66,7 @@ export class CombatManager {
                     this.game.playerShip.takeDamage(p.damage);
                     this.removeProjectile(i);
                     this.game.updateHUD(); // Update hull display
+                    this.game.onGameEvent?.('playerHit', { damage: p.damage });
                 }
             }
 
@@ -137,6 +139,9 @@ export class CombatManager {
     }
 
     spawnLogic(delta) {
+        // Movie mode scripts its own battles — no ambient spawns
+        if (this.suppressSpawns) return;
+
         // Only spawn if in dangerous area (outer system) or random chance
         // For testing, spawn if few enemies
 

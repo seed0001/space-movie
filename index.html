@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solar System Trader</title>
     <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/cinema.css">
 </head>
 
 <body>
@@ -90,6 +91,59 @@
 
         <!-- Crosshair -->
         <div id="crosshair">+</div>
+
+        <!-- Cinema Overlay (letterbox, subtitles, title cards) -->
+        <div id="cinema-overlay">
+            <div id="letterbox-top" class="letterbox-bar"></div>
+            <div id="letterbox-bottom" class="letterbox-bar"></div>
+            <div id="cinema-vignette"></div>
+            <div id="cinema-fade"></div>
+            <div id="cinema-subtitles">
+                <div id="subtitle-speaker"></div>
+                <div id="subtitle-text"></div>
+            </div>
+            <div id="cinema-titlecard">
+                <div id="titlecard-super"></div>
+                <div id="titlecard-main"></div>
+                <div id="titlecard-sub"></div>
+            </div>
+            <div id="cinema-lowerthird">
+                <div id="lowerthird-title"></div>
+                <div id="lowerthird-sub"></div>
+            </div>
+            <div id="story-objective">
+                <span class="objective-label">OBJECTIVE</span>
+                <span id="objective-text"></span>
+            </div>
+            <div id="cinema-hint"></div>
+            <div id="cinema-credits">
+                <div id="credits-scroll"></div>
+            </div>
+        </div>
+
+        <!-- Mode Select -->
+        <div id="mode-select" class="hidden">
+            <h1>SOLAR SYSTEM TRADER</h1>
+            <div class="tagline">One solar system. Three ways through it.</div>
+            <div class="mode-cards">
+                <div class="mode-card" data-mode="play">
+                    <div class="mode-numeral">I</div>
+                    <div class="mode-title">THE GAME</div>
+                    <div class="mode-desc">Pure flight. Trade, mine, fight and explore the system on your own terms. No hand-holding.</div>
+                </div>
+                <div class="mode-card" data-mode="story">
+                    <div class="mode-numeral">II</div>
+                    <div class="mode-title">THE STORY</div>
+                    <div class="mode-desc">A guided picture you play. A crew talks you through every step — with cinematic interludes, drama and direction.</div>
+                </div>
+                <div class="mode-card" data-mode="movie">
+                    <div class="mode-numeral">III</div>
+                    <div class="mode-title">THE MOVIE</div>
+                    <div class="mode-desc">Sit back. An endless, procedurally generated space film — battles, landings, betrayal and drama. It never stops.</div>
+                </div>
+            </div>
+            <div class="mode-footnote">PRESS ESC AT ANY TIME TO RETURN TO THIS MENU</div>
+        </div>
 
         <!-- Loading screen -->
         <div id="loading-screen">

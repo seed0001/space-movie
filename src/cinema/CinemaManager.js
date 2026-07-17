@@ -6,6 +6,7 @@ import { Screenwriter } from './Screenwriter.js';
 import { CameraDirector } from './CameraDirector.js';
 import { MovieDirector } from './MovieDirector.js';
 import { StoryDirector } from './StoryDirector.js';
+import { getCallsign, setCallsign, pushCloudSave } from './CloudSave.js';
 
 // CinemaManager — front door of the three-part experience.
 // Owns the mode-select screen, the movie seed form, the AI/voice settings,
@@ -67,7 +68,18 @@ export class CinemaManager {
 
         this.modeSelectEl = document.getElementById('mode-select');
         this.buildSeedPanel();
+        this.buildCallsignRow();
         this.bindUI();
+
+        // Cloud save: every game save also syncs to the deploy server
+        const originalSave = game.saveGame.bind(game);
+        game.saveGame = () => {
+            originalSave();
+            pushCloudSave();
+        };
+
+        // Ask the deploy server whether it holds a shared AI key
+        this.client.checkServer().then(() => this.refreshAiStatus());
 
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Escape' && this.mode && this.mode !== 'play') {
@@ -174,13 +186,18 @@ export class CinemaManager {
                     <input id="setting-or-key" type="password" placeholder="sk-or-...">
 
                     <label>MODEL</label>
-                    <input id="setting-or-model" type="text" list="model-suggestions">
-                    <datalist id="model-suggestions">
-                        <option value="anthropic/claude-haiku-4.5"></option>
-                        <option value="anthropic/claude-sonnet-4.5"></option>
-                        <option value="openai/gpt-4o-mini"></option>
-                        <option value="meta-llama/llama-3.3-70b-instruct"></option>
-                    </datalist>
+                    <select id="setting-or-model">
+                        <option value="anthropic/claude-haiku-4.5">Claude Haiku 4.5 — fast &amp; sharp (recommended)</option>
+                        <option value="anthropic/claude-sonnet-4.5">Claude Sonnet 4.5 — best writing, pricier</option>
+                        <option value="openai/gpt-4o-mini">GPT-4o mini — cheap</option>
+                        <option value="openai/gpt-4.1-mini">GPT-4.1 mini</option>
+                        <option value="google/gemini-2.5-flash">Gemini 2.5 Flash</option>
+                        <option value="meta-llama/llama-3.3-70b-instruct">Llama 3.3 70B</option>
+                        <option value="deepseek/deepseek-chat">DeepSeek Chat — very cheap</option>
+                        <option value="__custom__">Custom (enter any OpenRouter id)…</option>
+                    </select>
+                    <input id="setting-or-model-custom" type="text" class="hidden"
+                           placeholder="vendor/model-id from openrouter.ai/models">
 
                     <label>VOICES</label>
                     <select id="setting-voice-mode">
@@ -213,9 +230,23 @@ export class CinemaManager {
             this.client.setKey(e.target.value);
             this.refreshAiStatus();
         });
-        panel.querySelector('#setting-or-model').addEventListener('change', (e) => {
-            this.client.setModel(e.target.value);
-            this.refreshAiStatus();
+        const modelSelect = panel.querySelector('#setting-or-model');
+        const modelCustom = panel.querySelector('#setting-or-model-custom');
+        modelSelect.addEventListener('change', () => {
+            if (modelSelect.value === '__custom__') {
+                modelCustom.classList.remove('hidden');
+                modelCustom.focus();
+            } else {
+                modelCustom.classList.add('hidden');
+                this.client.setModel(modelSelect.value);
+                this.refreshAiStatus();
+            }
+        });
+        modelCustom.addEventListener('change', () => {
+            if (modelCustom.value.trim()) {
+                this.client.setModel(modelCustom.value);
+                this.refreshAiStatus();
+            }
         });
         panel.querySelector('#setting-voice-mode').addEventListener('change', (e) => {
             this.voice.setMode(e.target.value);
@@ -237,7 +268,17 @@ export class CinemaManager {
             if (saved) this.fillSeedForm(saved);
         } catch (e) { /* fresh form */ }
         document.getElementById('setting-or-key').value = this.client.apiKey;
-        document.getElementById('setting-or-model').value = this.client.model;
+        const modelSelect = document.getElementById('setting-or-model');
+        const modelCustom = document.getElementById('setting-or-model-custom');
+        const inList = [...modelSelect.options].some(o => o.value === this.client.model);
+        if (inList) {
+            modelSelect.value = this.client.model;
+            modelCustom.classList.add('hidden');
+        } else {
+            modelSelect.value = '__custom__';
+            modelCustom.value = this.client.model;
+            modelCustom.classList.remove('hidden');
+        }
         document.getElementById('setting-voice-mode').value = this.voice.mode;
     }
 
@@ -252,10 +293,32 @@ export class CinemaManager {
         };
     }
 
+    buildCallsignRow() {
+        const row = document.createElement('div');
+        row.id = 'callsign-row';
+        row.innerHTML = `
+            <label for="callsign-input">CALLSIGN</label>
+            <input id="callsign-input" type="text" maxlength="32"
+                   placeholder="cloud save name (optional)" value="${getCallsign()}">
+            <span class="callsign-hint">syncs your save across devices — same callsign, same pilot</span>
+        `;
+        this.modeSelectEl.querySelector('.mode-footnote').before(row);
+
+        row.querySelector('#callsign-input').addEventListener('change', (e) => {
+            const clean = setCallsign(e.target.value);
+            e.target.value = clean;
+            if (clean) pushCloudSave(); // claim the slot with the current state
+        });
+    }
+
     refreshAiStatus() {
         const el = document.getElementById('ai-status');
-        if (this.client.isConfigured()) {
-            el.textContent = `◉ AI LIVE — ${this.client.model}. Episodes IV+ generated fresh every screening.`;
+        if (!el) return;
+        if (this.client.apiKey) {
+            el.textContent = `◉ AI LIVE — ${this.client.model} (your key). Episodes IV+ generated fresh every screening.`;
+            el.className = 'ai-status live';
+        } else if (this.client.serverKey) {
+            el.textContent = `◉ AI LIVE — house key on the server (${this.client.serverModel || 'default model'}). No key needed; episodes IV+ generated fresh every screening.`;
             el.className = 'ai-status live';
         } else {
             el.textContent = '◌ NO API KEY — the three canon episodes play in full; later episodes use the built-in script generator. Add an OpenRouter key for a truly endless, never-repeating picture.';
@@ -273,6 +336,7 @@ export class CinemaManager {
         }
         errEl.textContent = '';
         localStorage.setItem(SEED_STORAGE, JSON.stringify(seed));
+        pushCloudSave(); // seed rides along with the cloud save
 
         this.mode = 'movie';
         this.writer.setSeed(seed);

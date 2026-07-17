@@ -6,6 +6,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { Game } from './Game.js';
 import { CinemaManager } from './cinema/CinemaManager.js';
+import { pullCloudSave } from './cinema/CloudSave.js';
 import { initDevPanel } from './dev/DevPanel.js';
 
 // Star Trail Shader
@@ -85,6 +86,10 @@ class Main {
 
         // Add lights
         this.setupLights();
+
+        // Cloud save: pull the newer copy before Game.init reads localStorage
+        this.updateLoading(40, 'Checking cloud save...');
+        await pullCloudSave();
 
         // Initialize game
         this.updateLoading(50, 'Initializing game systems...');

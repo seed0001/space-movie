@@ -3,7 +3,8 @@ import { defineConfig } from 'vite';
 export default defineConfig(({ command }) => ({
   root: '.',
   publicDir: 'public',
-  base: command === 'serve' ? '/' : '/solar-system-trader/',
+  // BASE_PATH=/ for Railway/root deploys; default keeps the itch.io subpath
+  base: process.env.BASE_PATH || (command === 'serve' ? '/' : '/solar-system-trader/'),
   server: {
     port: 5173,
     strictPort: true,

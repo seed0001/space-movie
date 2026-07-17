@@ -12,6 +12,22 @@ export class OpenRouterClient {
         this.apiKey = localStorage.getItem(KEY_STORAGE) || '';
         this.model = localStorage.getItem(MODEL_STORAGE) || DEFAULT_MODEL;
         this.lastError = null;
+        // A deploy server may hold a shared key and proxy /api/chat for us
+        this.serverKey = false;
+        this.serverModel = null;
+    }
+
+    // Probe the deploy server (if any) for a shared key. Safe on static hosts.
+    async checkServer() {
+        try {
+            const res = await fetch('./api/ai-status', { cache: 'no-store' });
+            if (res.ok) {
+                const s = await res.json();
+                this.serverKey = Boolean(s.serverKey);
+                this.serverModel = s.model || null;
+            }
+        } catch { /* static host — browser key only */ }
+        return this.serverKey;
     }
 
     setKey(key) {
@@ -25,25 +41,32 @@ export class OpenRouterClient {
     }
 
     isConfigured() {
-        return this.apiKey.length > 0;
+        return this.apiKey.length > 0 || this.serverKey;
     }
 
     // messages: [{role, content}]. Returns the assistant text, or null on failure.
+    // Uses the browser key directly when present; otherwise the deploy
+    // server's /api/chat proxy (shared key).
     async chat(messages, { temperature = 1.0, maxTokens = 4000, retries = 1 } = {}) {
         if (!this.isConfigured()) return null;
+        const useServer = !this.apiKey && this.serverKey;
 
         for (let attempt = 0; attempt <= retries; attempt++) {
             try {
-                const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                const res = await fetch(
+                    useServer ? './api/chat' : 'https://openrouter.ai/api/v1/chat/completions', {
                     method: 'POST',
                     headers: {
-                        'Authorization': `Bearer ${this.apiKey}`,
+                        ...(useServer ? {} : {
+                            'Authorization': `Bearer ${this.apiKey}`,
+                            'HTTP-Referer': 'https://github.com/seed0001/space-movie',
+                            'X-Title': 'Solar System Trader — Movie Mode',
+                        }),
                         'Content-Type': 'application/json',
-                        'HTTP-Referer': 'https://github.com/seed0001/space-movie',
-                        'X-Title': 'Solar System Trader — Movie Mode',
                     },
                     body: JSON.stringify({
-                        model: this.model,
+                        // Server proxy falls back to its own default model
+                        model: useServer && this.model === DEFAULT_MODEL ? undefined : this.model,
                         messages,
                         temperature,
                         max_tokens: maxTokens,

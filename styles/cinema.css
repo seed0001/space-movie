@@ -207,8 +207,52 @@
     min-height: 16px;
 }
 
+/* ---------- Callsign (cloud save) ---------- */
+#callsign-row {
+    margin-top: 40px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+#callsign-row label {
+    color: #7ab0ff;
+    font-size: 11px;
+    letter-spacing: 2px;
+}
+
+#callsign-row input {
+    background: rgba(8, 14, 28, 0.9);
+    border: 1px solid #2a3a5a;
+    color: #cdd6ea;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    padding: 8px 12px;
+    width: 220px;
+    outline: none;
+}
+
+#callsign-row input:focus {
+    border-color: #7ab0ff;
+}
+
+#callsign-row .callsign-hint {
+    color: #45526e;
+    font-size: 10px;
+    letter-spacing: 1px;
+    max-width: 260px;
+}
+
+#setting-or-model-custom.hidden {
+    display: none;
+}
+
+#setting-or-model-custom {
+    margin-top: 6px;
+}
+
 #mode-select .mode-footnote {
-    margin-top: 50px;
+    margin-top: 24px;
     color: #45526e;
     font-size: 11px;
     letter-spacing: 2px;
